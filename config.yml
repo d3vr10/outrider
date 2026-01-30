@@ -1,0 +1,57 @@
+# Outrider Configuration Example
+# This file demonstrates all available configuration options
+
+# OCI images to pull and transfer
+images:
+  - registry.gitlab.com/gitlab-org/gitlab-runner:alpine-v18.8.0
+
+# Container runtime configuration
+runtime:
+  type: docker
+  options:
+    cmd: docker  # Path to docker command
+
+# Network transport configuration
+transport:
+  type: ssh
+  options:
+    ssh_config: ~/.ssh/config
+    key_file: ~/.ssh/id_rsa_k8s_aprendiendo.key
+    # password: "your-password"  # Alternative: SSH password
+
+# Remote target systems
+targets:
+  - host: aprendiendo-k8s-01
+    # user: d3vr10
+  - host: aprendiendo-k8s-02
+    # user: d3vr10
+  - host: aprendiendo-k8s-03
+    # user: d3vr10
+
+# Local and remote tar file paths
+output_tar: ./images.tar
+remote_tar_path: /tmp/images.tar
+
+# Post-instruction configuration (optional)
+# Choose one of the following plugin types:
+
+# 1. K3s Air-gap Plugin (recommended for air-gapped K3s clusters)
+post_instructions:
+  plugin: k3s_airgap
+  options:
+    k3s_path: /usr/local/bin/k3s
+    containerd_path: /run/k3s/containerd/containerd.sock
+    cleanup_tar: true  # Remove tar file after import
+    use_sudo: true
+    sudo_password: B10t7eJe..
+
+# 2. Generic SSH Plugin (for custom commands)
+# post_instructions:
+#   plugin: generic_ssh
+#   options:
+#     command: |
+#       # {tar_path} will be replaced with the actual path
+#       docker load < {tar_path} && rm {tar_path}
+
+# 3. No post-instructions (just transfer files)
+# post_instructions: ~
