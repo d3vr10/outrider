@@ -5,7 +5,8 @@ setup(
     version="0.1.0",
     description="Automate OCI image transfer to air-gapped and remote systems",
     author="",
-    packages=find_packages(),
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
     python_requires=">=3.8",
     install_requires=[
         "paramiko>=3.4.0",
