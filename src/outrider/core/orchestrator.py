@@ -19,19 +19,24 @@ class Orchestrator:
     """Orchestrates the image transfer workflow"""
 
     def __init__(self, config: Config, skip_host_verification: bool = False,
-                 max_concurrent_uploads: int = 3):
+                 max_concurrent_uploads: int = 2, skip_cache: bool = False,
+                 clear_cache: bool = False):
         """Initialize orchestrator
 
         Args:
             config: Configuration instance
             skip_host_verification: Skip SSH host key verification (insecure)
-            max_concurrent_uploads: Maximum number of concurrent uploads (1-10)
+            max_concurrent_uploads: Maximum number of concurrent uploads (1-10, default: 2)
+            skip_cache: Skip SHA256 cache validation and re-compress
+            clear_cache: Clear cache before deployment
         """
         self.config = config
         self.runtime = None
         self.transport = None
         self.skip_host_verification = skip_host_verification
         self.max_concurrent_uploads = max_concurrent_uploads
+        self.skip_cache = skip_cache
+        self.clear_cache = clear_cache
 
     def _init_runtime(self) -> bool:
         """Initialize container runtime
