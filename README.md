@@ -9,6 +9,7 @@ Outrider automates the process of pulling OCI/Docker images from an online machi
 - **Plugin System**: Extensible post-instruction plugins for various deployment scenarios
 - **Built-in Plugins**:
   - `k3s_airgap`: Import images into air-gapped K3s clusters
+  - `docker`: Load images into Docker on remote systems
   - `generic_ssh`: Execute arbitrary SSH commands for custom deployments
 - **Batch Operations**: Deploy to multiple remote systems simultaneously
 - **Configuration-driven**: YAML-based configuration for repeatability
@@ -151,6 +152,20 @@ post_instructions:
     k3s_path: /usr/local/bin/k3s           # K3s executable path
     containerd_path: /run/k3s/containerd/containerd.sock  # Containerd socket
     cleanup_tar: true                      # Remove tar after import
+```
+
+#### Docker Plugin
+
+For loading images into Docker on remote systems:
+
+```yaml
+post_instructions:
+  plugin: docker
+  options:
+    docker_cmd: docker           # Docker command path (default: 'docker')
+    cleanup_tar: true            # Remove tar after loading
+    use_sudo: false              # Use sudo if needed (default: false)
+    # sudo_password: "password"  # Optional: password for sudo
 ```
 
 #### Generic SSH Plugin

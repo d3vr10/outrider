@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: outrider
+Version: 0.1.0
+Summary: Automate OCI image transfer to air-gapped and remote systems
+Author: 
+Requires-Python: >=3.8
+Requires-Dist: paramiko>=3.4.0
+Requires-Dist: pyyaml>=6.0.1
+Requires-Dist: click>=8.1.7
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

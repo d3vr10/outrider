@@ -10,6 +10,7 @@ from outrider.runtime.docker import DockerRuntime
 from outrider.transport.ssh import SSHTransport
 from outrider.plugins.k3s_airgap import K3sAirgapPlugin
 from outrider.plugins.generic_ssh import GenericSSHPlugin
+from outrider.plugins.docker import DockerPlugin
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +234,8 @@ class Orchestrator:
                 plugin = K3sAirgapPlugin(self.transport)
             elif plugin_type == "generic_ssh":
                 plugin = GenericSSHPlugin(self.transport)
+            elif plugin_type == "docker":
+                plugin = DockerPlugin(self.transport)
             else:
                 logger.error(f"Unknown plugin type: {plugin_type}")
                 return False
@@ -301,6 +304,8 @@ class Orchestrator:
                     plugin = K3sAirgapPlugin(self.transport)
                 elif plugin_type == "generic_ssh":
                     plugin = GenericSSHPlugin(self.transport)
+                elif plugin_type == "docker":
+                    plugin = DockerPlugin(self.transport)
                 else:
                     logger.error(f"Unknown plugin type: {plugin_type}")
                     return (target.host, False)

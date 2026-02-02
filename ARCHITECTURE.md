@@ -138,6 +138,7 @@ class BasePlugin(ABC):
 
 **Current Implementations**:
 - `K3sAirgapPlugin`: Imports images into K3s containerd
+- `DockerPlugin`: Loads images into Docker daemon
 - `GenericSSHPlugin`: Executes arbitrary SSH commands
 
 ### Configuration

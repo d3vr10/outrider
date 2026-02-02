@@ -3,9 +3,9 @@
 
 # OCI images to pull and transfer
 images:
-  - nginx:latest
-  - redis:7-alpine
-  - postgres:15
+  - mariadb:lts
+  - nginx:alpine
+  - php:8.3-alpine-pa
 
 # Container runtime configuration
 runtime:
@@ -17,21 +17,13 @@ runtime:
 transport:
   type: ssh
   options:
-    key_file: ~/.ssh/id_rsa  # SSH private key
-    # password: "your-password"  # Alternative: SSH password
+    # key_file: ~/.ssh/id_rsa  # SSH private key
+    user: root
+    password: "sshk3yp@SS"  # Alternative: SSH password
 
 # Remote target systems
 targets:
-  - host: 192.168.1.10
-    user: ubuntu
-    port: 22
-
-  - host: 192.168.1.11
-    user: ubuntu
-    port: 22
-
-  - host: air-gapped-k3s-node
-    user: root
+  - host: 192.168.20.234
     port: 22
 
 # Local and remote tar file paths
@@ -42,20 +34,19 @@ remote_tar_path: /tmp/images.tar
 # Choose one of the following plugin types:
 
 # 1. K3s Air-gap Plugin (recommended for air-gapped K3s clusters)
-post_instructions:
-  plugin: k3s_airgap
-  options:
-    k3s_path: /usr/local/bin/k3s
-    containerd_path: /run/k3s/containerd/containerd.sock
-    cleanup_tar: true  # Remove tar file after import
-
-# 2. Docker Plugin (for remote Docker hosts)
 # post_instructions:
-#   plugin: docker
+#   plugin: k3s_airgap
 #   options:
-#     docker_cmd: docker        # Path to docker command
-#     cleanup_tar: true         # Remove tar file after loading
-#     use_sudo: false           # Use sudo if needed
+#     k3s_path: /usr/local/bin/k3s
+#     containerd_path: /run/k3s/containerd/containerd.sock
+#     cleanup_tar: true  # Remove tar file after import
+
+post_instructions:
+  plugin: docker
+  options:
+    docker_cmd: docker        # Path to docker command
+    cleanup_tar: true         # Remove tar file after loading
+    use_sudo: false           # Use sudo if needed
 
 # 3. Generic SSH Plugin (for custom commands)
 # post_instructions:

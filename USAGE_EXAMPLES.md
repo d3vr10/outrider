@@ -4,10 +4,11 @@ This document provides practical examples for common use cases.
 
 ## Table of Contents
 1. [Air-gapped K3s Cluster](#air-gapped-k3s-cluster)
-2. [Docker Swarm](#docker-swarm)
-3. [File Transfer Only](#file-transfer-only)
-4. [Multiple Clusters](#multiple-clusters)
-5. [Custom Deployment](#custom-deployment)
+2. [Docker Hosts](#docker-hosts)
+3. [Docker Swarm](#docker-swarm)
+4. [File Transfer Only](#file-transfer-only)
+5. [Multiple Clusters](#multiple-clusters)
+6. [Custom Deployment](#custom-deployment)
 
 ## Air-gapped K3s Cluster
 
@@ -80,6 +81,67 @@ kubectl get images  # or similar command for your cluster
 
 ---
 
+## Docker Hosts
+
+Deploy images to standalone Docker hosts using the Docker plugin.
+
+**Configuration:**
+
+```yaml
+images:
+  - myapp:v1.0
+  - postgres:15-alpine
+  - redis:7-alpine
+
+runtime:
+  type: docker
+
+transport:
+  type: ssh
+  options:
+    key_file: ~/.ssh/id_rsa
+
+targets:
+  - host: docker-host-1.example.com
+    user: ubuntu
+    port: 22
+
+  - host: docker-host-2.example.com
+    user: ubuntu
+    port: 22
+
+output_tar: ./docker-images.tar
+remote_tar_path: /tmp/docker-images.tar
+
+post_instructions:
+  plugin: docker
+  options:
+    docker_cmd: docker
+    cleanup_tar: true
+    use_sudo: false
+```
+
+**Usage:**
+
+```bash
+# Deploy to Docker hosts
+outrider deploy -c docker-config.yaml -v
+
+# Verify images loaded on remote host
+ssh ubuntu@docker-host-1.example.com docker images
+```
+
+**What happens:**
+1. Docker pulls images on the online machine
+2. Images are saved to a tar file (docker-images.tar)
+3. Tar file is transferred to each Docker host via SSH
+4. Images are loaded into Docker daemon on each host
+5. Tar files are cleaned up automatically
+
+**Note**: If the Docker daemon requires sudo, set `use_sudo: true` in the options.
+
+---
+
 ## Docker Swarm
 
 Deploy container images to Docker Swarm cluster nodes.
@@ -136,6 +198,20 @@ outrider deploy -c swarm-config.yaml -v
 # SSH to node and verify
 ssh ubuntu@swarm-node-1 docker images
 ```
+
+**Alternative with Docker Plugin:**
+
+Instead of generic_ssh, you can also use the Docker plugin for simpler configuration:
+
+```yaml
+post_instructions:
+  plugin: docker
+  options:
+    docker_cmd: docker
+    cleanup_tar: true
+```
+
+The Docker plugin is recommended for standard Docker deployments, while generic_ssh is more flexible for custom workflows.
 
 ---
 

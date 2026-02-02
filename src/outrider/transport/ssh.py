@@ -17,21 +17,37 @@ class SSHTransport(BaseTransport):
     """SSH/SCP transport protocol"""
 
     def __init__(self, key_file: Optional[str] = None, password: Optional[str] = None,
-                 ssh_config: Optional[str] = None, skip_host_verification: bool = False):
+                 ssh_config: Optional[str] = None, skip_host_verification: bool = False,
+                 allow_agent: bool = True, look_for_keys: bool = True):
         """Initialize SSH transport
 
         Args:
-            key_file: Path to SSH private key (default: ~/.ssh/id_rsa)
+            key_file: Path to SSH private key (defaults to ~/.ssh/id_rsa if it exists)
             password: SSH password (used if key_file not available)
             ssh_config: Path to SSH config file (auto-detected if None)
             skip_host_verification: Skip SSH host key verification (insecure, for testing only)
+            allow_agent: Allow SSH agent for key discovery (default: True)
+            look_for_keys: Look for discoverable keys in ~/.ssh/ (default: True)
         """
         # Expand ~ in paths
+        self.key_file = None
         if key_file:
-            self.key_file = os.path.expanduser(key_file)
+            expanded_key = os.path.expanduser(key_file)
+            if os.path.exists(expanded_key):
+                self.key_file = expanded_key
+            else:
+                logger.warning(f"SSH key file not found: {expanded_key}, will use password auth if available")
         else:
-            self.key_file = os.path.expanduser("~/.ssh/id_rsa")
+            # Try default key file if it exists
+            default_key = os.path.expanduser("~/.ssh/id_rsa")
+            if os.path.exists(default_key):
+                self.key_file = default_key
+            else:
+                logger.debug(f"Default SSH key not found: {default_key}, will use password auth if available")
+
         self.password = password
+        self.allow_agent = allow_agent
+        self.look_for_keys = look_for_keys
         self.clients = {}  # Cache for SSH clients
         self.clients_lock = threading.Lock()  # Protect client cache for concurrent access
         self.ssh_config_parser = None
@@ -99,15 +115,26 @@ class SSHTransport(BaseTransport):
             config['username'] = remote_host.user
 
         # Apply global transport options (medium precedence)
-        if self.key_file and not config.get('key_filename'):
-            config['key_filename'] = self.key_file
+        # Only set key_filename if we have a valid key file
+        if self.key_file:
+            if not config.get('key_filename'):
+                config['key_filename'] = self.key_file
+        else:
+            # No key file - remove it from config if it came from SSH config
+            config.pop('key_filename', None)
+
         if self.password:
             config['password'] = self.password
 
         # Apply per-target ssh_options (highest precedence)
         if remote_host.ssh_options:
             if 'key_file' in remote_host.ssh_options:
-                config['key_filename'] = os.path.expanduser(remote_host.ssh_options['key_file'])
+                expanded_key = os.path.expanduser(remote_host.ssh_options['key_file'])
+                if os.path.exists(expanded_key):
+                    config['key_filename'] = expanded_key
+                else:
+                    logger.warning(f"Per-target SSH key file not found: {expanded_key}, will use password auth if available")
+                    config.pop('key_filename', None)
             if 'password' in remote_host.ssh_options:
                 config['password'] = remote_host.ssh_options['password']
             if 'port' in remote_host.ssh_options:
@@ -116,6 +143,32 @@ class SSHTransport(BaseTransport):
                 config['username'] = remote_host.ssh_options['user']
 
         config.setdefault('timeout', 10)
+
+        # Set credential fallback strategy
+        # Paramiko tries credentials in this order:
+        # 1. Provided key_filename (our key_file)
+        # 2. SSH agent keys (if allow_agent=True)
+        # 3. Discoverable keys in ~/.ssh/ (if look_for_keys=True)
+        # 4. Password (if provided)
+        config['allow_agent'] = self.allow_agent
+        config['look_for_keys'] = self.look_for_keys
+
+        # Log authentication strategy for debugging
+        auth_methods = []
+        if config.get('key_filename'):
+            auth_methods.append(f"key: {config['key_filename']}")
+        if self.allow_agent:
+            auth_methods.append("SSH agent")
+        if self.look_for_keys:
+            auth_methods.append("~/.ssh/ keys")
+        if config.get('password'):
+            auth_methods.append("password")
+
+        if auth_methods:
+            logger.debug(f"Auth methods for {config.get('hostname')} (in priority order): {' → '.join(auth_methods)}")
+        else:
+            logger.warning(f"No authentication methods configured for {config.get('hostname')}!")
+
         return config
 
     def _get_client(self, remote_host: RemoteHost) -> SSHClient:
@@ -150,7 +203,24 @@ class SSHTransport(BaseTransport):
                     self.clients[host_key] = client
                     logger.info(f"Connected to {remote_host.host}")
                 except Exception as e:
-                    logger.error(f"Failed to connect to {remote_host.host}: {e}")
+                    # Provide detailed error message about what auth methods were attempted
+                    auth_summary = []
+                    if connect_config.get('key_filename'):
+                        auth_summary.append(f"key-based ({connect_config['key_filename']})")
+                    if connect_config.get('allow_agent'):
+                        auth_summary.append("SSH agent")
+                    if connect_config.get('look_for_keys'):
+                        auth_summary.append("~/.ssh/ keys")
+                    if connect_config.get('password'):
+                        auth_summary.append("password")
+
+                    if auth_summary:
+                        logger.error(
+                            f"Failed to connect to {remote_host.host}: {e}\n"
+                            f"  Attempted auth methods: {', '.join(auth_summary)}"
+                        )
+                    else:
+                        logger.error(f"Failed to connect to {remote_host.host}: {e}\n  No auth methods available!")
                     raise
 
             return self.clients[host_key]
