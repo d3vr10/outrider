@@ -233,6 +233,15 @@ class Config:
         return self.data.get("post_instructions")
 
     @property
+    def no_cache(self) -> bool:
+        """Get no_cache flag (force re-upload)
+
+        Returns:
+            True if cache should be bypassed
+        """
+        return self.data.get("no_cache", False)
+
+    @property
     def output_tar(self) -> str:
         """Get output tar file path
 

@@ -82,9 +82,14 @@ def cli(ctx, debug):
     is_flag=True,
     help="Clear cache before deployment",
 )
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    help="Force re-upload even if file already exists on target (bypass resume checks)",
+)
 @click.pass_context
 def deploy(ctx, config: str, verbose: bool, env_file: tuple, skip_host_verification: bool,
-           max_concurrent_uploads: int, skip_cache: bool, clear_cache: bool):
+           max_concurrent_uploads: int, skip_cache: bool, clear_cache: bool, no_cache: bool):
     """Deploy OCI images to remote systems
 
     Examples:
@@ -108,7 +113,8 @@ def deploy(ctx, config: str, verbose: bool, env_file: tuple, skip_host_verificat
             skip_host_verification=skip_host_verification,
             max_concurrent_uploads=max_concurrent_uploads,
             skip_cache=skip_cache,
-            clear_cache=clear_cache
+            clear_cache=clear_cache,
+            no_cache=no_cache
         )
 
         if skip_host_verification:
@@ -116,6 +122,9 @@ def deploy(ctx, config: str, verbose: bool, env_file: tuple, skip_host_verificat
 
         if skip_cache:
             click.echo("⚠️  Cache validation skipped - will re-compress images")
+
+        if no_cache:
+            click.echo("⚠️  Remote cache disabled - will force re-upload even if file exists")
 
         if orchestrator.run():
             click.echo("\n✓ Deployment completed successfully")

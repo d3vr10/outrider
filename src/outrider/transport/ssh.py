@@ -225,18 +225,50 @@ class SSHTransport(BaseTransport):
 
             return self.clients[host_key]
 
-    def transfer_file(self, local_path: str, remote_host: RemoteHost, remote_path: str) -> bool:
-        """Transfer a file to a remote host via SCP
+    def file_exists_remote(self, remote_host: RemoteHost, remote_path: str) -> bool:
+        """Check if a file exists on the remote host
+
+        Args:
+            remote_host: Remote host configuration
+            remote_path: Path on remote host
+
+        Returns:
+            True if file exists, False otherwise
+        """
+        try:
+            client = self._get_client(remote_host)
+            sftp = client.open_sftp()
+            try:
+                sftp.stat(remote_path)
+                sftp.close()
+                return True
+            except IOError:
+                sftp.close()
+                return False
+        except Exception as e:
+            logger.debug(f"Error checking if remote file exists: {e}")
+            return False
+
+    def transfer_file(self, local_path: str, remote_host: RemoteHost, remote_path: str,
+                     progress_callback=None, skip_if_exists: bool = False) -> bool:
+        """Transfer a file to a remote host via SFTP
 
         Args:
             local_path: Path to local file
             remote_host: Remote host configuration
             remote_path: Path on remote host
+            progress_callback: Optional callback function for progress updates (called with bytes_transferred)
+            skip_if_exists: Skip transfer if file already exists on remote
 
         Returns:
-            True if successful, False otherwise
+            True if successful or skipped, False otherwise
         """
         try:
+            # Check if remote file exists and skip if requested
+            if skip_if_exists and self.file_exists_remote(remote_host, remote_path):
+                logger.info(f"Remote file already exists, skipping: {remote_host.host}:{remote_path}")
+                return True
+
             client = self._get_client(remote_host)
             sftp = client.open_sftp()
 
@@ -251,7 +283,12 @@ class SSHTransport(BaseTransport):
                     logger.debug(f"Creating remote directory: {remote_dir}")
                     sftp.makedirs(remote_dir)
 
-            sftp.put(local_path, remote_path)
+            # Transfer file with optional progress callback
+            if progress_callback:
+                sftp.put(local_path, remote_path, callback=progress_callback)
+            else:
+                sftp.put(local_path, remote_path)
+
             sftp.close()
 
             logger.info(f"Successfully transferred {local_path} to {remote_host.host}")

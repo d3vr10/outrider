@@ -5,6 +5,8 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
+from tqdm import tqdm
+
 from outrider.core.config import Config
 from outrider.runtime.docker import DockerRuntime
 from outrider.transport.ssh import SSHTransport
@@ -20,7 +22,7 @@ class Orchestrator:
 
     def __init__(self, config: Config, skip_host_verification: bool = False,
                  max_concurrent_uploads: int = 2, skip_cache: bool = False,
-                 clear_cache: bool = False):
+                 clear_cache: bool = False, no_cache: bool = False):
         """Initialize orchestrator
 
         Args:
@@ -29,6 +31,7 @@ class Orchestrator:
             max_concurrent_uploads: Maximum number of concurrent uploads (1-10, default: 2)
             skip_cache: Skip SHA256 cache validation and re-compress
             clear_cache: Clear cache before deployment
+            no_cache: Force re-upload even if file exists on remote (bypass resume)
         """
         self.config = config
         self.runtime = None
@@ -37,6 +40,7 @@ class Orchestrator:
         self.max_concurrent_uploads = max_concurrent_uploads
         self.skip_cache = skip_cache
         self.clear_cache = clear_cache
+        self.no_cache = no_cache
 
     def _init_runtime(self) -> bool:
         """Initialize container runtime
@@ -122,9 +126,16 @@ class Orchestrator:
 
         logger.info(f"Compressing {len(self.config.images)} image(s) to {output_tar}")
 
-        if not self.runtime.save_images(self.config.images, output_tar):
-            logger.error("Failed to compress images")
-            return False
+        # Show progress bar while compression happens
+        with tqdm(total=100, desc="Compressing images", unit="%") as pbar:
+            # Start compression
+            if not self.runtime.save_images(self.config.images, output_tar):
+                pbar.close()
+                logger.error("Failed to compress images")
+                return False
+
+            # Update progress to completion
+            pbar.update(100 - pbar.n)
 
         if not os.path.exists(output_tar):
             logger.error(f"Tar file not created: {output_tar}")
@@ -149,12 +160,27 @@ class Orchestrator:
             return False
 
         targets = self.config.targets
+        file_size = os.path.getsize(local_tar)
 
         # If only 1 target, skip thread pool overhead
         if len(targets) == 1:
             target = targets[0]
             logger.info(f"Transferring to {target.user}@{target.host}:{target.port}")
-            success = self.transport.transfer_file(local_tar, target, remote_tar)
+
+            # Determine if we should skip existing files (only skip if no_cache is False and config allows)
+            skip_existing = (self.no_cache is False) and (self.config.no_cache is False)
+
+            # Create progress bar for single transfer
+            with tqdm(total=file_size, desc=f"Upload to {target.host}", unit="B", unit_scale=True) as pbar:
+                def progress_callback(transferred, total):
+                    pbar.update(transferred - pbar.n)
+
+                success = self.transport.transfer_file(
+                    local_tar, target, remote_tar,
+                    progress_callback=progress_callback,
+                    skip_if_exists=skip_existing
+                )
+
             if success:
                 logger.info(f"Successfully transferred to {target.host}")
             else:
@@ -164,11 +190,24 @@ class Orchestrator:
         # Concurrent transfers for multiple targets
         logger.info(f"Transferring to {len(targets)} target(s) with max {self.max_concurrent_uploads} concurrent uploads")
 
+        # Determine if we should skip existing files (only skip if no_cache is False and config allows)
+        skip_existing = (self.no_cache is False) and (self.config.no_cache is False)
+
         def transfer_worker(target):
             """Worker function for threaded transfer"""
             logger.info(f"Transferring to {target.user}@{target.host}:{target.port}")
             try:
-                success = self.transport.transfer_file(local_tar, target, remote_tar)
+                # Create progress bar for this target
+                with tqdm(total=file_size, desc=f"Upload to {target.host}", unit="B", unit_scale=True) as pbar:
+                    def progress_callback(transferred, total):
+                        pbar.update(transferred - pbar.n)
+
+                    success = self.transport.transfer_file(
+                        local_tar, target, remote_tar,
+                        progress_callback=progress_callback,
+                        skip_if_exists=skip_existing
+                    )
+
                 if success:
                     logger.info(f"Successfully transferred to {target.host}")
                 else:
