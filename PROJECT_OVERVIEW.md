@@ -173,6 +173,9 @@ outrider deploy --help
 | [README.md](README.md) | Complete feature documentation | All users |
 | [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) | Practical real-world examples | Users with specific scenarios |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Design and extension guide | Developers extending Outrider |
+| [SSH_AUTHENTICATION_GUIDE.md](SSH_AUTHENTICATION_GUIDE.md) | SSH credential handling and best practices | Users needing custom auth setup |
+| [DOCKER_PLUGIN_GUIDE.md](DOCKER_PLUGIN_GUIDE.md) | Docker plugin deep-dive and configuration | Docker users |
+| [PRODUCTION_FEATURES_GUIDE.md](PRODUCTION_FEATURES_GUIDE.md) | Caching, environment expansion, resume, CI/CD | Enterprise and production deployments |
 | [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | This document | Getting oriented |
 
 ## Core Concepts
@@ -313,11 +316,13 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed examples.
 ## Support and Issues
 
 For questions or issues:
-1. Check [QUICKSTART.md](QUICKSTART.md)
-2. Read [README.md](README.md)
-3. Review [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md)
-4. Check [ARCHITECTURE.md](ARCHITECTURE.md) for extension questions
-5. File an issue with detailed error messages and verbose logs
+1. Check [QUICKSTART.md](QUICKSTART.md) for basic setup
+2. Read [README.md](README.md) for feature details
+3. Review [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) for your scenario
+4. Check [SSH_AUTHENTICATION_GUIDE.md](SSH_AUTHENTICATION_GUIDE.md) for auth issues
+5. Check [PRODUCTION_FEATURES_GUIDE.md](PRODUCTION_FEATURES_GUIDE.md) for caching, env vars, and CI/CD
+6. Check [ARCHITECTURE.md](ARCHITECTURE.md) for extension questions
+7. File an issue with detailed error messages and verbose logs
 
 ## License
 

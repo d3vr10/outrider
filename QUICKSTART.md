@@ -6,7 +6,7 @@ Get up and running with Outrider in 5 minutes.
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/d3vr10/outrider.git
 cd outrider
 
 # Install dependencies
