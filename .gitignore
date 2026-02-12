@@ -1,6 +1,6 @@
 /.claude/
 /venv/
-/outrider.egg-info/
+outrider.egg-info/
 __pycache__/
 *.tar
 *.tar.gz
