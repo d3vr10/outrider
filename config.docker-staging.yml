@@ -3,9 +3,11 @@
 
 # OCI images to pull and transfer
 images:
-  - mariadb:lts
-  - nginx:alpine
+  # - mariadb:lts
+  # - nginx:alpine
+  # - php:8.3-fpm-alpine
   - php:8.3-alpine-pa
+  
 
 # Container runtime configuration
 runtime:
