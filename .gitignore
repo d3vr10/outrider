@@ -1,0 +1,7 @@
+/.claude/
+/venv/
+outrider.egg-info/
+__pycache__/
+*.tar
+*.tar.gz
+/.pytest_cache/

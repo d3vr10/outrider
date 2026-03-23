@@ -1,0 +1,37 @@
+# Example: Deploy images to Docker host
+#
+# This example shows how to pull images and deploy them
+# to a remote Docker daemon using the Docker plugin
+
+images:
+  - nginx:latest
+  - redis:7-alpine
+  - postgres:15-alpine
+
+runtime:
+  type: docker
+
+transport:
+  type: ssh
+  options:
+    key_file: ~/.ssh/id_rsa
+
+targets:
+  - host: docker-host-1.example.com
+    user: ubuntu
+    port: 22
+
+  - host: docker-host-2.example.com
+    user: ubuntu
+    port: 22
+
+output_tar: ./docker-images.tar
+remote_tar_path: /tmp/docker-images.tar
+
+post_instructions:
+  plugin: docker
+  options:
+    docker_cmd: docker           # Path to docker command (default: 'docker')
+    cleanup_tar: true            # Remove tar file after loading
+    use_sudo: false              # Whether to use sudo (default: false)
+    # sudo_password: "password"  # If use_sudo is true and no key-based sudo

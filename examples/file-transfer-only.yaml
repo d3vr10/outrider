@@ -1,0 +1,31 @@
+# Example: Transfer images without executing post-instructions
+#
+# This example shows how to pull and transfer images,
+# leaving the import/loading to be done manually on the target systems
+
+images:
+  - ubuntu:22.04
+  - node:18-alpine
+  - python:3.11-slim
+
+runtime:
+  type: docker
+
+transport:
+  type: ssh
+  options:
+    key_file: ~/.ssh/id_rsa
+
+targets:
+  - host: 192.168.1.100
+    user: admin
+    port: 22
+
+  - host: 192.168.1.101
+    user: admin
+    port: 22
+
+output_tar: ./backup-images.tar
+remote_tar_path: /home/admin/images.tar
+
+# No post-instructions - images are transferred but not imported

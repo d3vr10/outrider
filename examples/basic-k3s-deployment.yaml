@@ -1,0 +1,33 @@
+# Example: Deploy images to air-gapped K3s cluster
+#
+# This example shows how to pull multiple images and deploy them
+# to an air-gapped K3s cluster with automatic import
+
+images:
+  - nginx:latest
+  - alpine:latest
+
+runtime:
+  type: docker
+  options:
+    cmd: docker
+
+transport:
+  type: ssh
+  options:
+    key_file: ~/.ssh/id_rsa
+
+targets:
+  - host: k3s-node-1
+    user: ubuntu
+    port: 22
+
+output_tar: ./k3s-images.tar
+remote_tar_path: /tmp/k3s-images.tar
+
+post_instructions:
+  plugin: k3s_airgap
+  options:
+    k3s_path: /usr/local/bin/k3s
+    containerd_path: /run/k3s/containerd/containerd.sock
+    cleanup_tar: true
