@@ -1,8 +1,8 @@
 # Outrider - OCI Image Transfer Tool
 
-I built Outrider out of necessity. As the sole admin of multiple air-gapped K3s clusters — some production, some spun up just for testing — I was constantly switching between them to set up the infrastructure needed to get container images where they needed to be. Whether it was configuring an internal forwarding proxy, wiring up a Tailscale network, or standing up a Spegel mirror repository, every cluster had its own setup dance. It became a major hassle fast.
+As the sole admin of multiple air-gapped K3s clusters — some production, some spun up just for testing — I was constantly switching between them to set up the infrastructure needed to get container images where they needed to be. Whether it was configuring an internal forwarding proxy, wiring up a Tailscale network, or standing up a Spegel mirror repository, every cluster had its own setup dance. It became a major hassle fast.
 
-So I made a tool that lets me distribute images across all cluster members from a single source of truth: my laptop and a custom YAML manifest. Outrider pulls OCI/Docker images, compresses them, and deploys them to air-gapped or remote systems over SSH — with an extensible architecture for different container runtimes, transport protocols (I fancied the idea of maybe setting up an SFTP or HTTP server on one of them someday just to shake up the routine a bit, so... I may have overengineered this part a little), and post-deployment actions.
+So I made Outrider to let me distribute images across all cluster members from a single source of truth: my laptop and a custom YAML manifest. Outrider pulls OCI/Docker images, compresses them, and deploys them to air-gapped or remote systems over SSH — with an extensible architecture for different container runtimes, transport protocols (I fancied the idea of maybe setting up an SFTP or HTTP server on one of them someday just to shake up the routine a bit, so... I may have overengineered this part a little), and post-deployment actions.
 
 ## Features
 
